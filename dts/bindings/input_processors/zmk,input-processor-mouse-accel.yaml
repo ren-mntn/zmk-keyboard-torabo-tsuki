@@ -1,0 +1,12 @@
+description: |
+  Mouse acceleration input processor with Keyball-style adaptive curve.
+  Applies a nonlinear speed multiplier to REL_X/REL_Y events and exits
+  typing mode when the movement magnitude exceeds a threshold.
+
+compatible: "zmk,input-processor-mouse-accel"
+
+properties:
+  "#input-processor-cells":
+    type: int
+    required: true
+    const: 0

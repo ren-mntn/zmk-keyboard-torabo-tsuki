@@ -1,0 +1,25 @@
+menuconfig ZMK_BEHAVIOR_CLK_OR_KEY
+    bool "Click-or-key behavior (Keyball44-style typing mode)"
+    default y
+    help
+      Enable custom behavior that acts as a mouse click in mouse mode,
+      but as a keyboard key in typing mode. Includes vowel auto-complete
+      for Japanese romaji input.
+
+if ZMK_BEHAVIOR_CLK_OR_KEY
+
+config ZMK_TYPING_MODE_TIMEOUT
+    int "Typing mode vowel auto-complete timeout (ms)"
+    default 300
+    help
+      Time window in milliseconds after a click where a vowel key will
+      trigger auto-insertion of the preceding consonant (J/K/L).
+
+endif # ZMK_BEHAVIOR_CLK_OR_KEY
+
+menuconfig ZMK_INPUT_PROCESSOR_MOUSE_ACCEL
+    bool "Mouse acceleration input processor (Keyball44-style)"
+    default y
+    help
+      Enable adaptive mouse acceleration curve and integrated
+      typing mode exit on trackball movement.

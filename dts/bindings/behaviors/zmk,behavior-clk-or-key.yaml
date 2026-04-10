@@ -1,0 +1,12 @@
+description: |
+  Click-or-key behavior. Acts as a mouse button in mouse mode, but as a
+  keyboard key in typing mode. Provides Keyball44-style typing mode with
+  automatic switching based on trackball movement.
+
+compatible: "zmk,behavior-clk-or-key"
+
+include: two_param.yaml
+
+properties:
+  "#binding-cells":
+    const: 2

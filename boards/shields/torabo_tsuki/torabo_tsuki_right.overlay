@@ -1,4 +1,6 @@
 #include "torabo_tsuki.dtsi"
+#include <input/processors.dtsi>
+#include <dt-bindings/zmk/input_transform.h>
 
 &size_s_transform {
     col-offset = <7>;
@@ -10,4 +12,8 @@
 
 &size_l_transform {
     col-offset = <7>;
+};
+
+&trackball_listener {
+    input-processors = <&mouse_accel>;
 };
