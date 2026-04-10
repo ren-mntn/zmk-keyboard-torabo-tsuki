@@ -5,8 +5,4 @@ description: |
 
 compatible: "zmk,input-processor-mouse-accel"
 
-properties:
-  "#input-processor-cells":
-    type: int
-    required: true
-    const: 0
+include: ip_zero_param.yaml

@@ -16,13 +16,17 @@
 #include <zephyr/logging/log.h>
 #include <drivers/behavior.h>
 
+#include "../typing_mode.h"
+
+#define IS_CENTRAL (IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT))
+
+#if IS_CENTRAL
 #include <zmk/behavior.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/keycode_state_changed.h>
 #include <zmk/hid.h>
 #include <zmk/endpoints.h>
-
-#include "../typing_mode.h"
+#endif
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -30,6 +34,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 static int on_press(struct zmk_behavior_binding *binding,
                     struct zmk_behavior_binding_event event) {
+#if IS_CENTRAL
     uint32_t key_encoded = binding->param1;
     uint32_t button_bit = binding->param2;
 
@@ -49,11 +54,13 @@ static int on_press(struct zmk_behavior_binding *binding,
 
     zmk_hid_mouse_button_press(button_bit);
     zmk_endpoints_send_mouse_report();
-    return ZMK_BEHAVIOR_OPAQUE;
+#endif
+    return 0; /* ZMK_BEHAVIOR_OPAQUE */
 }
 
 static int on_release(struct zmk_behavior_binding *binding,
                       struct zmk_behavior_binding_event event) {
+#if IS_CENTRAL
     uint32_t key_encoded = binding->param1;
     uint32_t button_bit = binding->param2;
 
@@ -66,7 +73,8 @@ static int on_release(struct zmk_behavior_binding *binding,
 
     zmk_hid_mouse_button_release(button_bit);
     zmk_endpoints_send_mouse_report();
-    return ZMK_BEHAVIOR_OPAQUE;
+#endif
+    return 0; /* ZMK_BEHAVIOR_OPAQUE */
 }
 
 static const struct behavior_driver_api behavior_clk_or_key_driver_api = {

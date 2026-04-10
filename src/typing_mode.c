@@ -11,14 +11,18 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "typing_mode.h"
+
+#define IS_CENTRAL (IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT))
+
+#if IS_CENTRAL
 #include <zmk/event_manager.h>
 #include <zmk/events/keycode_state_changed.h>
 #include <zmk/behavior.h>
 #include <zmk/behavior_queue.h>
 #include <zmk/hid.h>
 #include <dt-bindings/zmk/keys.h>
-
-#include "typing_mode.h"
+#endif
 
 LOG_MODULE_REGISTER(typing_mode, CONFIG_ZMK_LOG_LEVEL);
 
@@ -64,9 +68,13 @@ void typing_mode_set(bool enable) {
     }
     g_is_typing_mode = enable;
 
+#if IS_CENTRAL
     if (!enable && g_current_pressed_key != 0) {
         /* Release any held key from the custom behavior */
         raise_zmk_keycode_state_changed_from_encoded(g_current_pressed_key, false, k_uptime_get());
+    }
+#endif
+    if (!enable) {
         g_current_pressed_key = 0;
     }
     /* Clear pending vowel-autocomplete state on mode change */
@@ -77,6 +85,8 @@ void typing_mode_set(bool enable) {
 bool typing_mode_get(void) {
     return g_is_typing_mode;
 }
+
+#if IS_CENTRAL
 
 /* Guard against re-entry from our own injected key presses */
 static bool in_vowel_inject = false;
@@ -152,3 +162,5 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
 
 ZMK_LISTENER(typing_mode, typing_mode_keycode_listener);
 ZMK_SUBSCRIPTION(typing_mode, zmk_keycode_state_changed);
+
+#endif /* IS_CENTRAL */

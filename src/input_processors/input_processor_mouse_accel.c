@@ -2,7 +2,7 @@
  * Copyright 2026 ren-mntn
  * SPDX-License-Identifier: MIT
  *
- * Keyball44-style adaptive mouse acceleration.
+ * Keyball44-style adaptive mouse acceleration (per-axis).
  *
  * Parameters (from original adjust_mouse_speed):
  *   min_speed    = 0.4   -- low-speed floor for precision
@@ -10,11 +10,10 @@
  *   acceleration = 0.03  -- curve steepness
  *   threshold    = 3.0   -- magnitude at which typing mode is exited
  *
- * Because this processor only sees one axis per event (REL_X or REL_Y),
- * we buffer the most recent x-value and use it together with the current
- * y-value to compute the magnitude on the y-event (which arrives second
- * according to the PMW3610 driver). This mirrors how Keyball's
- * keyball_on_apply_motion_to_mouse_move processes x and y together.
+ * Note: The original Keyball code uses 2D magnitude (sqrt(x^2 + y^2)),
+ * but to avoid event buffering/re-emission in the Zephyr input pipeline
+ * we apply the curve per-axis using |v| as the magnitude. This is a
+ * close approximation and is significantly simpler.
  */
 
 #define DT_DRV_COMPAT zmk_input_processor_mouse_accel
@@ -38,20 +37,6 @@ LOG_MODULE_REGISTER(mouse_accel, CONFIG_ZMK_LOG_LEVEL);
 #define MA_TYPING_EXIT_THR 3.0f
 #define MA_PRECISION_THR   3.0f
 
-static int32_t pending_x = 0;
-
-static inline int32_t clip_int8(int32_t v) {
-    if (v > 127) return 127;
-    if (v < -127) return -127;
-    return v;
-}
-
-static int32_t apply_curve(int32_t v, float mul) {
-    float scaled = (float)v * mul;
-    int32_t i = (int32_t)scaled;
-    return clip_int8(i);
-}
-
 static int ma_handle_event(const struct device *dev, struct input_event *event, uint32_t param1,
                            uint32_t param2, struct zmk_input_processor_state *state) {
     ARG_UNUSED(dev);
@@ -60,27 +45,14 @@ static int ma_handle_event(const struct device *dev, struct input_event *event, 
     ARG_UNUSED(state);
 
     if (event->type != INPUT_EV_REL) {
-        return 0;
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
+    if (event->code != INPUT_REL_X && event->code != INPUT_REL_Y) {
+        return ZMK_INPUT_PROC_CONTINUE;
     }
 
-    if (event->code == INPUT_REL_X) {
-        /* Remember x for when y arrives */
-        pending_x = event->value;
-        return 0;
-    }
-
-    if (event->code != INPUT_REL_Y) {
-        return 0;
-    }
-
-    int32_t x = pending_x;
-    int32_t y = event->value;
-    pending_x = 0;
-
-    /* Magnitude */
-    float fx = (float)x;
-    float fy = (float)y;
-    float mag = sqrtf(fx * fx + fy * fy);
+    int32_t v = event->value;
+    float mag = (v < 0) ? (float)(-v) : (float)v;
 
     /* Exit typing mode on significant movement */
     if (mag > MA_TYPING_EXIT_THR) {
@@ -96,20 +68,17 @@ static int ma_handle_event(const struct device *dev, struct input_event *event, 
         mul = MA_MIN_SPEED + (mul - MA_MIN_SPEED) * (mag / MA_PRECISION_THR);
     }
 
-    /* Apply to both axes. We need to emit an x event (since we swallowed it
-     * by returning 0 earlier) before letting the y event continue. */
-    int32_t new_x = apply_curve(x, mul);
-    int32_t new_y = apply_curve(y, mul);
-
-    /* Mutate the y event in place, and re-emit the x event synchronously. */
-    event->value = new_y;
-
-    /* Re-inject the adjusted x value so downstream processors see it. */
-    if (new_x != 0) {
-        input_report_rel(event->dev, INPUT_REL_X, new_x, false, K_NO_WAIT);
+    /* Apply multiplier, clip to int8 range */
+    float scaled = (float)v * mul;
+    int32_t new_v = (int32_t)scaled;
+    if (new_v > 127) {
+        new_v = 127;
+    } else if (new_v < -127) {
+        new_v = -127;
     }
 
-    return 0;
+    event->value = new_v;
+    return ZMK_INPUT_PROC_CONTINUE;
 }
 
 static struct zmk_input_processor_driver_api ma_driver_api = {
