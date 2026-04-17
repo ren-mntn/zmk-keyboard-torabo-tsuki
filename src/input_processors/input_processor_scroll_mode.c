@@ -103,7 +103,7 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
              * is far more reliable than the native AC_PAN path. */
             scroll_shift_press();
             event->code = INPUT_REL_WHEEL;
-            event->value = -ticks;
+            event->value = -ticks * SCROLL_X_OUTPUT_MULT;
             return ZMK_INPUT_PROC_CONTINUE;
         }
         /* Sub-tick: drop this event. */
