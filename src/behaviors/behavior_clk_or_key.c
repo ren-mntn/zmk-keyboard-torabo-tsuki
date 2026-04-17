@@ -50,14 +50,18 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 static bool cmd_held_by_button[3] = {false, false, false};
 
 static void press_cmd_modifier(int64_t timestamp) {
-    ARG_UNUSED(timestamp);
-    zmk_hid_register_mod(MOD_LGUI);
+    /* Two parallel paths so the modifier reaches the HID report regardless
+     * of which code path ZMK uses for the next event:
+     * 1) Direct HID register -> updates the next keyboard report sent.
+     * 2) Keycode event raise  -> processed by ZMK's listeners (incl. HID). */
+    zmk_hid_register_mods(MOD_LGUI);
     zmk_endpoints_send_report(HID_USAGE_KEY);
+    raise_zmk_keycode_state_changed_from_encoded(LGUI, true, timestamp);
 }
 
 static void release_cmd_modifier(int64_t timestamp) {
-    ARG_UNUSED(timestamp);
-    zmk_hid_unregister_mod(MOD_LGUI);
+    raise_zmk_keycode_state_changed_from_encoded(LGUI, false, timestamp);
+    zmk_hid_unregister_mods(MOD_LGUI);
     zmk_endpoints_send_report(HID_USAGE_KEY);
 }
 #endif
