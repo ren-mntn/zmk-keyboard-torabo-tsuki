@@ -20,13 +20,13 @@
 #include <zephyr/logging/log.h>
 
 #include <drivers/input_processor.h>
+#include <zephyr/kernel.h>
 
 #define IS_CENTRAL (IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT))
 
 #if IS_CENTRAL
-#include <zmk/hid.h>
-#include <zmk/endpoints.h>
-#include <dt-bindings/zmk/modifiers.h>
+#include <zmk/event_manager.h>
+#include <zmk/events/keycode_state_changed.h>
 #include <dt-bindings/zmk/keys.h>
 #endif
 
@@ -51,13 +51,18 @@ static int32_t y_accum;
  * we only send keyboard HID reports when the state actually changes. */
 static bool scroll_shift_held;
 
+/* Canonical ZMK path: route LSHIFT through the keycode-state event
+ * system so it flows through the regular HID report pipeline. After
+ * raising the press we pause 8 ms to let the keyboard report land on
+ * the host before the modified wheel event is dispatched — macOS
+ * samples the Shift state at the moment the wheel report arrives. */
 static void scroll_shift_press(void) {
 #if IS_CENTRAL
     if (scroll_shift_held) {
         return;
     }
-    zmk_hid_register_mods(MOD_LSFT);
-    zmk_endpoints_send_report(HID_USAGE_KEY);
+    raise_zmk_keycode_state_changed_from_encoded(LSHIFT, true, k_uptime_get());
+    k_msleep(8);
     scroll_shift_held = true;
 #endif
 }
@@ -67,8 +72,7 @@ static void scroll_shift_release(void) {
     if (!scroll_shift_held) {
         return;
     }
-    zmk_hid_unregister_mods(MOD_LSFT);
-    zmk_endpoints_send_report(HID_USAGE_KEY);
+    raise_zmk_keycode_state_changed_from_encoded(LSHIFT, false, k_uptime_get());
     scroll_shift_held = false;
 #endif
 }
