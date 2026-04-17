@@ -48,7 +48,7 @@
 &kp TAB    &kp Q      &kp W      &kp E      &kp R      &kp T                                                   &kp Y      &kp U              &kp I              &kp O              &kp P              &kp BSPC
 &kp LGUI   &kp A      &kp S      &kp D      &kp F      &kp G                                                   &kp H      &clk_or_key J 0  &clk_or_key K 255  &clk_or_key L 1  &lt 6 SEMI         &lt 5 MINUS
 &kp LSHFT  &kp Z      &kp X      &kp C      &kp V      &kp B                                                   &kp N      &kp M              &kp COMMA          &kp DOT            &kp FSLH           &kp RSHFT
-&none      &none      &kp LALT   &kp RCTRL  &mt LCTRL LANG2  &lt 2 SPACE  &lt 4 LANG1           &lt 3 ESC  &lt 1 RET  &lt 1 LANG1        &kp RGUI           &bt_toggle_01      &none              &none
+&none      &none      &kp LALT   &kp RCTRL  &mt LCTRL LANG2  &lt 2 SPACE  &lt 4 LANG1           &lt 3 ESC  &lt 1 RET  &lt 1 LANG1        &kp RGUI           &kp ESC            &none              &none
             >;
         };
 
@@ -93,15 +93,13 @@
         };
 
         /* Layer 5: Window management / Screenshots
-         * Left half top row: BT profile controls
-         *   SEL0/SEL1/SEL2 = pair/switch profile 0/1/2
-         *   NXT/PRV = cycle through profiles
-         *   CLR = forget the current profile's pairing
+         * BT controls: MINUS-hold + A = toggle profile 0<->1
+         *              MINUS-hold + top-row left keys = explicit SEL/NXT/PRV/CLR
          */
         layer_5 {
             bindings = <
 &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_NXT &bt BT_PRV &bt BT_CLR                                          &kp LS(LG(N4))     &kp LC(LS(LG(N4))) &kp LC(LS(S))   &none             &kp LC(LS(LA(P)))  &none
-&none      &none      &none      &none      &none      &none                                                   &kp LC(LS(LA(H)))  &kp LC(LS(LA(J)))  &kp LC(LS(LA(K))) &kp LC(LS(LA(L))) &kp LC(LS(LA(SEMI))) &none
+&none      &bt_toggle_01 &none     &none      &none      &none                                                   &kp LC(LS(LA(H)))  &kp LC(LS(LA(J)))  &kp LC(LS(LA(K))) &kp LC(LS(LA(L))) &kp LC(LS(LA(SEMI))) &none
 &none      &none      &none      &none      &none      &none                                                   &kp LC(LS(LA(N)))  &kp LC(TAB)        &kp LA(TAB)    &none             &none              &none
 &none      &none      &none      &none      &none      &none      &none                                 &none      &kp LG(SPACE)      &trans             &none              &none              &none
             >;
