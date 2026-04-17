@@ -157,7 +157,7 @@
         /*   optional features   */
         power-gpios = <&bmp 14 GPIO_ACTIVE_HIGH>;
         // snipe-layers = <1>;
-        // scroll-layers = <2 3>;
+        scroll-layers = <2 3 5>;
         // automouse-layer disabled: clk_or_key behavior handles mouse mode
         // automouse-layer = <1>;
     };
