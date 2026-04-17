@@ -28,7 +28,7 @@ LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 /* Pixels of trackball motion per scroll tick. Tune as needed. */
-#define SCROLL_DIVISOR 20
+#define SCROLL_DIVISOR 50
 
 static int32_t x_accum;
 static int32_t y_accum;
