@@ -21,10 +21,14 @@
 
 #include <drivers/input_processor.h>
 
+#define IS_CENTRAL (IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT))
+
+#if IS_CENTRAL
 #include <zmk/hid.h>
 #include <zmk/endpoints.h>
 #include <dt-bindings/zmk/modifiers.h>
 #include <dt-bindings/zmk/keys.h>
+#endif
 
 #include "../typing_mode.h"
 
@@ -47,21 +51,25 @@ static int32_t y_accum;
 static bool scroll_shift_held;
 
 static void scroll_shift_press(void) {
+#if IS_CENTRAL
     if (scroll_shift_held) {
         return;
     }
     zmk_hid_register_mods(MOD_LSFT);
     zmk_endpoints_send_report(HID_USAGE_KEY);
     scroll_shift_held = true;
+#endif
 }
 
 static void scroll_shift_release(void) {
+#if IS_CENTRAL
     if (!scroll_shift_held) {
         return;
     }
     zmk_hid_unregister_mods(MOD_LSFT);
     zmk_endpoints_send_report(HID_USAGE_KEY);
     scroll_shift_held = false;
+#endif
 }
 
 static int scroll_mode_handle_event(const struct device *dev, struct input_event *event,
