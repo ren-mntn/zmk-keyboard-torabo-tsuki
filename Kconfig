@@ -24,6 +24,13 @@ menuconfig ZMK_INPUT_PROCESSOR_MOUSE_ACCEL
       Enable adaptive mouse acceleration curve and integrated
       typing mode exit on trackball movement.
 
+menuconfig ZMK_BEHAVIOR_BT_TOGGLE_01
+    bool "BT profile toggle (0 <-> 1)"
+    default y
+    help
+      Flip between BT profiles 0 and 1 on each activation. Handy for
+      users who only rotate between two Bluetooth hosts.
+
 menuconfig ZMK_INPUT_PROCESSOR_SCROLL_MODE
     bool "Scroll-mode input processor (Keyball44 drag-scroll port)"
     default y

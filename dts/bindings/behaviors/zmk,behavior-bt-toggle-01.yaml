@@ -1,0 +1,8 @@
+description: |
+  Toggle the active BT profile between 0 and 1. Each activation flips
+  to whichever of {0, 1} is not currently active (any other profile
+  index is treated as "not 0" and will move to 0).
+
+compatible: "zmk,behavior-bt-toggle-01"
+
+include: zero_param.yaml
