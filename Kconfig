@@ -23,3 +23,11 @@ menuconfig ZMK_INPUT_PROCESSOR_MOUSE_ACCEL
     help
       Enable adaptive mouse acceleration curve and integrated
       typing mode exit on trackball movement.
+
+menuconfig ZMK_INPUT_PROCESSOR_SCROLL_MODE
+    bool "Scroll-mode input processor (Keyball44 drag-scroll port)"
+    default y
+    help
+      Convert trackball REL_X/REL_Y events into REL_HWHEEL/REL_WHEEL
+      while the global scroll mode is active. Works with clk_or_key's
+      scroll trigger (param2 = 0xFF) and fixed-scroll lock.

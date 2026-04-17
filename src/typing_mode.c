@@ -62,6 +62,24 @@ uint32_t g_last_keycode = 0;
 int64_t g_typing_timer = 0;
 uint32_t g_current_pressed_key = 0;
 
+/* Scroll mode state */
+bool g_is_scrolling = false;
+bool g_is_fixed_scroll = false;
+
+void scroll_mode_set(bool active) {
+    g_is_scrolling = active;
+    if (!active) {
+        g_is_fixed_scroll = false;
+    }
+}
+
+void scroll_mode_set_fixed(bool fixed) {
+    g_is_fixed_scroll = fixed;
+    if (fixed) {
+        g_is_scrolling = true;
+    }
+}
+
 void typing_mode_set(bool enable) {
     if (g_is_typing_mode == enable) {
         return;
@@ -120,6 +138,11 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
 
     if (!is_alpha_usage(ev->usage_page, ev->keycode)) {
         return ZMK_EV_EVENT_BUBBLE;
+    }
+
+    /* Any A-Z press cancels fixed-scroll mode (Keyball44 behavior). */
+    if (g_is_fixed_scroll) {
+        scroll_mode_set(false);
     }
 
     /* Any A-Z press enters typing mode */

@@ -15,5 +15,7 @@
 };
 
 &trackball_listener {
-    input-processors = <&mouse_accel>;
+    /* Order matters: scroll_mode converts X/Y to WHEEL/HWHEEL when active,
+     * so mouse_accel (X/Y only) then no-ops on wheel events. */
+    input-processors = <&scroll_mode>, <&mouse_accel>;
 };

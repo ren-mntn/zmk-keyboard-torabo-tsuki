@@ -1,0 +1,8 @@
+description: |
+  Scroll-mode input processor. Converts REL_X/REL_Y into REL_HWHEEL/REL_WHEEL
+  while the global scroll mode (g_is_scrolling or g_is_fixed_scroll) is active.
+  Uses an internal accumulator for tick quantization.
+
+compatible: "zmk,input-processor-scroll-mode"
+
+include: ip_zero_param.yaml
