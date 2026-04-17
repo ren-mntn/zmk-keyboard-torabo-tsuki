@@ -15,7 +15,9 @@
 #include <zephyr/logging/log.h>
 #include <drivers/behavior.h>
 
-#if IS_ENABLED(CONFIG_ZMK_BLE)
+#define IS_CENTRAL (IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT))
+
+#if IS_CENTRAL && IS_ENABLED(CONFIG_ZMK_BLE)
 #include <zmk/ble.h>
 #endif
 
@@ -28,7 +30,7 @@ static int on_press(struct zmk_behavior_binding *binding,
     ARG_UNUSED(binding);
     ARG_UNUSED(event);
 
-#if IS_ENABLED(CONFIG_ZMK_BLE)
+#if IS_CENTRAL && IS_ENABLED(CONFIG_ZMK_BLE)
     int current = zmk_ble_active_profile_index();
     uint8_t target = (current == 0) ? 1 : 0;
     zmk_ble_prof_select(target);
