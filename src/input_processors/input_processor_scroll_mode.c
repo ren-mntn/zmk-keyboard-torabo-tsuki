@@ -27,8 +27,11 @@ LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
-/* Pixels of trackball motion per scroll tick. Tune as needed. */
-#define SCROLL_DIVISOR 50
+/* Pixels of trackball motion per scroll tick. Tune as needed.
+ * Horizontal movements tend to be smaller and fewer, so a smaller
+ * divisor keeps HWHEEL reactive relative to vertical WHEEL. */
+#define SCROLL_DIVISOR_Y 50
+#define SCROLL_DIVISOR_X 25
 
 static int32_t x_accum;
 static int32_t y_accum;
@@ -54,9 +57,9 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
 
     if (event->code == INPUT_REL_X) {
         x_accum += event->value;
-        int32_t ticks = x_accum / SCROLL_DIVISOR;
+        int32_t ticks = x_accum / SCROLL_DIVISOR_X;
         if (ticks != 0) {
-            x_accum -= ticks * SCROLL_DIVISOR;
+            x_accum -= ticks * SCROLL_DIVISOR_X;
             event->code = INPUT_REL_HWHEEL;
             event->value = ticks;
             return ZMK_INPUT_PROC_CONTINUE;
@@ -67,9 +70,9 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
 
     if (event->code == INPUT_REL_Y) {
         y_accum += event->value;
-        int32_t ticks = y_accum / SCROLL_DIVISOR;
+        int32_t ticks = y_accum / SCROLL_DIVISOR_Y;
         if (ticks != 0) {
-            y_accum -= ticks * SCROLL_DIVISOR;
+            y_accum -= ticks * SCROLL_DIVISOR_Y;
             event->code = INPUT_REL_WHEEL;
             /* Natural scroll: trackball down -> scroll content down = wheel up. */
             event->value = -ticks;
