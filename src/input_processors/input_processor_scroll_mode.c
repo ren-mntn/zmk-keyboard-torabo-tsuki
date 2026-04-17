@@ -41,7 +41,8 @@ LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
  * macOS interprets as horizontal scroll system-wide (AC_PAN alone is
  * unreliable on macOS due to a long-standing axis-lock quirk). */
 #define SCROLL_DIVISOR_Y 50
-#define SCROLL_DIVISOR_X 50
+#define SCROLL_DIVISOR_X 15
+#define SCROLL_X_OUTPUT_MULT 2
 
 static int32_t x_accum;
 static int32_t y_accum;
