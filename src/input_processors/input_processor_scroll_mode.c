@@ -28,10 +28,11 @@ LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 /* Pixels of trackball motion per scroll tick. Tune as needed.
- * Horizontal movements tend to be smaller and fewer, so a smaller
- * divisor keeps HWHEEL reactive relative to vertical WHEEL. */
+ * macOS AC_PAN (horizontal) responds slowly to small values, so X
+ * accumulates quickly AND the output tick is amplified. */
 #define SCROLL_DIVISOR_Y 50
-#define SCROLL_DIVISOR_X 25
+#define SCROLL_DIVISOR_X 50
+#define SCROLL_X_OUTPUT_MULT 5
 
 static int32_t x_accum;
 static int32_t y_accum;
@@ -61,7 +62,7 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
         if (ticks != 0) {
             x_accum -= ticks * SCROLL_DIVISOR_X;
             event->code = INPUT_REL_HWHEEL;
-            event->value = ticks;
+            event->value = ticks * SCROLL_X_OUTPUT_MULT;
             return ZMK_INPUT_PROC_CONTINUE;
         }
         /* Sub-tick: drop this event. */
