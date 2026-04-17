@@ -21,6 +21,11 @@
 
 #include <drivers/input_processor.h>
 
+#include <zmk/hid.h>
+#include <zmk/endpoints.h>
+#include <dt-bindings/zmk/modifiers.h>
+#include <dt-bindings/zmk/keys.h>
+
 #include "../typing_mode.h"
 
 LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
@@ -28,14 +33,36 @@ LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 /* Pixels of trackball motion per scroll tick. Tune as needed.
- * macOS AC_PAN (horizontal) needs a much smaller threshold AND a
- * larger output value to register at normal trackball speeds. */
+ * Horizontal output is emitted as REL_WHEEL while LSHIFT is held, which
+ * macOS interprets as horizontal scroll system-wide (AC_PAN alone is
+ * unreliable on macOS due to a long-standing axis-lock quirk). */
 #define SCROLL_DIVISOR_Y 50
-#define SCROLL_DIVISOR_X 10
-#define SCROLL_X_OUTPUT_MULT 3
+#define SCROLL_DIVISOR_X 50
 
 static int32_t x_accum;
 static int32_t y_accum;
+
+/* Tracks whether LSHIFT is currently held by the scroll processor so
+ * we only send keyboard HID reports when the state actually changes. */
+static bool scroll_shift_held;
+
+static void scroll_shift_press(void) {
+    if (scroll_shift_held) {
+        return;
+    }
+    zmk_hid_register_mods(MOD_LSFT);
+    zmk_endpoints_send_report(HID_USAGE_KEY);
+    scroll_shift_held = true;
+}
+
+static void scroll_shift_release(void) {
+    if (!scroll_shift_held) {
+        return;
+    }
+    zmk_hid_unregister_mods(MOD_LSFT);
+    zmk_endpoints_send_report(HID_USAGE_KEY);
+    scroll_shift_held = false;
+}
 
 static int scroll_mode_handle_event(const struct device *dev, struct input_event *event,
                                     uint32_t param1, uint32_t param2,
@@ -46,9 +73,10 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
     ARG_UNUSED(state);
 
     if (!g_is_scrolling && !g_is_fixed_scroll) {
-        /* Not scrolling: reset accumulator and pass through. */
+        /* Not scrolling: reset accumulator, release Shift if we're still holding it. */
         x_accum = 0;
         y_accum = 0;
+        scroll_shift_release();
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
@@ -61,8 +89,12 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
         int32_t ticks = x_accum / SCROLL_DIVISOR_X;
         if (ticks != 0) {
             x_accum -= ticks * SCROLL_DIVISOR_X;
-            event->code = INPUT_REL_HWHEEL;
-            event->value = ticks * SCROLL_X_OUTPUT_MULT;
+            /* Horizontal trick: hold LSHIFT and emit vertical wheel.
+             * macOS translates Shift+Wheel into horizontal scroll, which
+             * is far more reliable than the native AC_PAN path. */
+            scroll_shift_press();
+            event->code = INPUT_REL_WHEEL;
+            event->value = -ticks;
             return ZMK_INPUT_PROC_CONTINUE;
         }
         /* Sub-tick: drop this event. */
@@ -74,6 +106,8 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
         int32_t ticks = y_accum / SCROLL_DIVISOR_Y;
         if (ticks != 0) {
             y_accum -= ticks * SCROLL_DIVISOR_Y;
+            /* Vertical: release the Shift that a prior X tick may have set. */
+            scroll_shift_release();
             event->code = INPUT_REL_WHEEL;
             /* Natural scroll: trackball down -> scroll content down = wheel up. */
             event->value = -ticks;
