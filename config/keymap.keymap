@@ -93,7 +93,7 @@
         };
 
         /* Layer 5: Window management / Screenshots
-         * BT controls: MINUS-hold + right-half leftmost thumb (Esc slot) = toggle profile 0<->1
+         * BT controls: MINUS-hold + Enter (right thumb second-from-left) = toggle profile 0<->1
          *              MINUS-hold + top-row left keys = explicit SEL/NXT/PRV/CLR
          */
         layer_5 {
@@ -101,7 +101,7 @@
 &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_NXT &bt BT_PRV &bt BT_CLR                                          &kp LS(LG(N4))     &kp LC(LS(LG(N4))) &kp LC(LS(S))   &none             &kp LC(LS(LA(P)))  &none
 &none      &none      &none      &none      &none      &none                                                   &kp LC(LS(LA(H)))  &kp LC(LS(LA(J)))  &kp LC(LS(LA(K))) &kp LC(LS(LA(L))) &kp LC(LS(LA(SEMI))) &none
 &none      &none      &none      &none      &none      &none                                                   &kp LC(LS(LA(N)))  &kp LC(TAB)        &kp LA(TAB)    &none             &none              &none
-&none      &none      &none      &none      &none      &none      &none                                 &bt_toggle_01 &kp LG(SPACE) &trans             &none              &none              &none
+&none      &none      &none      &none      &none      &none      &none                                 &none      &bt_toggle_01      &trans             &none              &none              &none
             >;
         };
 
