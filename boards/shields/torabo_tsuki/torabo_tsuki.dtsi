@@ -156,7 +156,7 @@
 
         /*   optional features   */
         power-gpios = <&bmp 14 GPIO_ACTIVE_HIGH>;
-        // snipe-layers = <1>;
+        snipe-layers = <7>;
         // scroll-layers removed: scroll_mode input processor + clk_or_key (K
         // position, param2=255) handle drag-scroll with Keyball44 semantics.
         // automouse-layer disabled: clk_or_key behavior handles mouse mode
