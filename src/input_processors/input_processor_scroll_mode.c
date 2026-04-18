@@ -20,15 +20,6 @@
 #include <zephyr/logging/log.h>
 
 #include <drivers/input_processor.h>
-#include <zephyr/kernel.h>
-
-#define IS_CENTRAL (IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT))
-
-#if IS_CENTRAL
-#include <zmk/event_manager.h>
-#include <zmk/events/keycode_state_changed.h>
-#include <dt-bindings/zmk/keys.h>
-#endif
 
 #include "../typing_mode.h"
 
@@ -37,45 +28,16 @@ LOG_MODULE_REGISTER(scroll_mode, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 /* Pixels of trackball motion per scroll tick. Tune as needed.
- * Horizontal output is emitted as REL_WHEEL while LSHIFT is held, which
- * macOS interprets as horizontal scroll system-wide (AC_PAN alone is
- * unreliable on macOS due to a long-standing axis-lock quirk). */
+ * Horizontal uses REL_HWHEEL (AC_PAN). On macOS this can feel slow
+ * unless System Settings -> Mouse -> "Natural scrolling" is toggled
+ * off, because macOS's IOHIDFamily axis-locks when both wheel axes
+ * see motion. */
 #define SCROLL_DIVISOR_Y 50
 #define SCROLL_DIVISOR_X 15
 #define SCROLL_X_OUTPUT_MULT 2
 
 static int32_t x_accum;
 static int32_t y_accum;
-
-/* Tracks whether LSHIFT is currently held by the scroll processor so
- * we only send keyboard HID reports when the state actually changes. */
-static bool scroll_shift_held;
-
-/* Canonical ZMK path: route LSHIFT through the keycode-state event
- * system so it flows through the regular HID report pipeline. After
- * raising the press we pause 8 ms to let the keyboard report land on
- * the host before the modified wheel event is dispatched — macOS
- * samples the Shift state at the moment the wheel report arrives. */
-static void scroll_shift_press(void) {
-#if IS_CENTRAL
-    if (scroll_shift_held) {
-        return;
-    }
-    raise_zmk_keycode_state_changed_from_encoded(LSHIFT, true, k_uptime_get());
-    k_msleep(8);
-    scroll_shift_held = true;
-#endif
-}
-
-static void scroll_shift_release(void) {
-#if IS_CENTRAL
-    if (!scroll_shift_held) {
-        return;
-    }
-    raise_zmk_keycode_state_changed_from_encoded(LSHIFT, false, k_uptime_get());
-    scroll_shift_held = false;
-#endif
-}
 
 static int scroll_mode_handle_event(const struct device *dev, struct input_event *event,
                                     uint32_t param1, uint32_t param2,
@@ -86,10 +48,8 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
     ARG_UNUSED(state);
 
     if (!g_is_scrolling && !g_is_fixed_scroll) {
-        /* Not scrolling: reset accumulator, release Shift if we're still holding it. */
         x_accum = 0;
         y_accum = 0;
-        scroll_shift_release();
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
@@ -102,15 +62,10 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
         int32_t ticks = x_accum / SCROLL_DIVISOR_X;
         if (ticks != 0) {
             x_accum -= ticks * SCROLL_DIVISOR_X;
-            /* Horizontal trick: hold LSHIFT and emit vertical wheel.
-             * macOS translates Shift+Wheel into horizontal scroll, which
-             * is far more reliable than the native AC_PAN path. */
-            scroll_shift_press();
-            event->code = INPUT_REL_WHEEL;
-            event->value = -ticks * SCROLL_X_OUTPUT_MULT;
+            event->code = INPUT_REL_HWHEEL;
+            event->value = ticks * SCROLL_X_OUTPUT_MULT;
             return ZMK_INPUT_PROC_CONTINUE;
         }
-        /* Sub-tick: drop this event. */
         return ZMK_INPUT_PROC_STOP;
     }
 
@@ -119,8 +74,6 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
         int32_t ticks = y_accum / SCROLL_DIVISOR_Y;
         if (ticks != 0) {
             y_accum -= ticks * SCROLL_DIVISOR_Y;
-            /* Vertical: release the Shift that a prior X tick may have set. */
-            scroll_shift_release();
             event->code = INPUT_REL_WHEEL;
             /* Natural scroll: trackball down -> scroll content down = wheel up. */
             event->value = -ticks;
