@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(mouse_accel, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 #define MA_MIN_SPEED       0.8f
-#define MA_MAX_SPEED       1.2f
+#define MA_MAX_SPEED       1.0f
 #define MA_ACCELERATION    0.03f
 #define MA_TYPING_EXIT_THR 3.0f
 #define MA_PRECISION_THR   1.5f
