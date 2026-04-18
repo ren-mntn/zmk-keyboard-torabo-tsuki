@@ -57,6 +57,15 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
+    /* The pmw3610 driver emits a pair per poll: REL_X (sync=false) and
+     * REL_Y (sync=true). The sync=true on REL_Y is what triggers the
+     * input_listener to flush the mouse report. If we return STOP on
+     * either event we drop the sync barrier and any already-accumulated
+     * wheel data never ships. So: always return CONTINUE, and when the
+     * axis hasn't crossed a tick, pass the event through with value=0.
+     * The listener adds 0 to its accumulator (no effect) but still sees
+     * sync=true on REL_Y and flushes the pending HWHEEL/WHEEL bytes. */
+
     if (event->code == INPUT_REL_X) {
         x_accum += event->value;
         int32_t ticks = x_accum / SCROLL_DIVISOR_X;
@@ -64,9 +73,10 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
             x_accum -= ticks * SCROLL_DIVISOR_X;
             event->code = INPUT_REL_HWHEEL;
             event->value = ticks * SCROLL_X_OUTPUT_MULT;
-            return ZMK_INPUT_PROC_CONTINUE;
+        } else {
+            event->value = 0;
         }
-        return ZMK_INPUT_PROC_STOP;
+        return ZMK_INPUT_PROC_CONTINUE;
     }
 
     if (event->code == INPUT_REL_Y) {
@@ -77,9 +87,10 @@ static int scroll_mode_handle_event(const struct device *dev, struct input_event
             event->code = INPUT_REL_WHEEL;
             /* Natural scroll: trackball down -> scroll content down = wheel up. */
             event->value = -ticks;
-            return ZMK_INPUT_PROC_CONTINUE;
+        } else {
+            event->value = 0;
         }
-        return ZMK_INPUT_PROC_STOP;
+        return ZMK_INPUT_PROC_CONTINUE;
     }
 
     return ZMK_INPUT_PROC_CONTINUE;
