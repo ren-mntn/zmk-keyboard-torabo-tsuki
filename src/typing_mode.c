@@ -143,13 +143,19 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
         scroll_mode_set(false);
     }
 
-    if (!is_alpha_usage(ev->usage_page, ev->keycode)) {
-        return ZMK_EV_EVENT_BUBBLE;
-    }
-
-    /* Any A-Z press enters typing mode */
+    /* Any non-click key press enters typing mode. This guarantees the
+     * next J/K/L goes down the letter path instead of being a click,
+     * so IME toggles (LANG1/LANG2), symbols, etc. all "wake up" the
+     * keyboard back into typing. */
     if (!g_is_typing_mode) {
         g_is_typing_mode = true;
+    }
+
+    if (!is_alpha_usage(ev->usage_page, ev->keycode)) {
+        /* Non-alpha key: cancel any in-flight vowel autocomplete. */
+        g_typing_timer = 0;
+        g_last_keycode = 0;
+        return ZMK_EV_EVENT_BUBBLE;
     }
 
     /* Vowel auto-complete: click was within TIMEOUT, now vowel -> inject consonant */
