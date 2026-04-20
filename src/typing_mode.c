@@ -136,13 +136,15 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    if (!is_alpha_usage(ev->usage_page, ev->keycode)) {
-        return ZMK_EV_EVENT_BUBBLE;
-    }
-
-    /* Any A-Z press cancels fixed-scroll mode (Keyball44 behavior). */
+    /* Any key press cancels fixed-scroll mode (matches QMK behavior).
+     * clk_or_key mouse-mode presses don't fire keycode_state_changed,
+     * so the scroll trigger and click buttons won't cancel themselves. */
     if (g_is_fixed_scroll) {
         scroll_mode_set(false);
+    }
+
+    if (!is_alpha_usage(ev->usage_page, ev->keycode)) {
+        return ZMK_EV_EVENT_BUBBLE;
     }
 
     /* Any A-Z press enters typing mode */
