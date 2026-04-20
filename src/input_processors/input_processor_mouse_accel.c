@@ -54,8 +54,11 @@ static int ma_handle_event(const struct device *dev, struct input_event *event, 
     int32_t v = event->value;
     float mag = (v < 0) ? (float)(-v) : (float)v;
 
-    /* Exit typing mode on significant movement */
-    if (mag > MA_TYPING_EXIT_THR) {
+    /* Exit typing mode on ANY trackball motion, matching the QMK
+     * pointing_device_task_user behavior (`x != 0 || y != 0`). The
+     * previous magnitude threshold occasionally left the keyboard
+     * stuck in typing mode when the user nudged the ball lightly. */
+    if (v != 0) {
         typing_mode_set(false);
     }
 
