@@ -156,25 +156,20 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
     if (g_typing_timer != 0 &&
         (ev->timestamp - g_typing_timer) <= CONFIG_ZMK_TYPING_MODE_TIMEOUT) {
         if (is_vowel(ev->keycode) && is_jkl_consonant(g_last_keycode)) {
-            uint32_t consonant = g_last_keycode;
+            uint32_t consonant_encoded =
+                ZMK_HID_USAGE(HID_USAGE_KEY, g_last_keycode);
             g_typing_timer = 0;
             g_last_keycode = 0;
 
-            /* Queue the consonant to be injected before the current vowel.
-             * Using zmk_behavior_queue_add avoids listener recursion. */
-            struct zmk_behavior_binding_event queue_event = {
-                .layer = 0,
-                .position = 0,
-                .timestamp = ev->timestamp,
-            };
-            struct zmk_behavior_binding kp_binding = {
-                .behavior_dev = "key_press",
-                .param1 = consonant,
-                .param2 = 0,
-            };
+            /* Raise the consonant synchronously so the HID report fires
+             * BEFORE the current vowel bubbles through. Queuing via
+             * zmk_behavior_queue_add delays the consonant until after the
+             * vowel has already been sent ("kaki" -> "AKKI"/"あっき"). */
             in_vowel_inject = true;
-            zmk_behavior_queue_add(&queue_event, kp_binding, true, 0);
-            zmk_behavior_queue_add(&queue_event, kp_binding, false, 5);
+            raise_zmk_keycode_state_changed_from_encoded(
+                consonant_encoded, true, ev->timestamp);
+            raise_zmk_keycode_state_changed_from_encoded(
+                consonant_encoded, false, ev->timestamp);
             in_vowel_inject = false;
         } else {
             /* Non-vowel key cancels the auto-complete window */

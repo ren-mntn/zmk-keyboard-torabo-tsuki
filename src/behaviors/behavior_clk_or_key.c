@@ -49,6 +49,11 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 /* Track per-button "is holding Cmd for pinch zoom" so release can mirror press. */
 static bool cmd_held_by_button[3] = {false, false, false};
 
+/* True while a scroll-trigger press that activated scroll mode is still
+ * held down. Survives a mid-gesture typing-mode flip so the matching
+ * release still exits scroll mode. */
+static bool scroll_trigger_pressed;
+
 static void press_cmd_modifier(int64_t timestamp) {
     /* Two parallel paths so the modifier reaches the HID report regardless
      * of which code path ZMK uses for the next event:
@@ -87,6 +92,7 @@ static int on_press(struct zmk_behavior_binding *binding,
 
     if (button == COK_SCROLL_TRIGGER) {
         scroll_mode_set(true);
+        scroll_trigger_pressed = true;
         return 0;
     }
 
@@ -116,6 +122,18 @@ static int on_release(struct zmk_behavior_binding *binding,
 #if IS_CENTRAL
     uint32_t key_encoded = binding->param1;
     uint32_t button = binding->param2;
+
+    /* Always close out a scroll-trigger regardless of current mode.
+     * The press flipped us into mouse/scroll state, but typing could
+     * have taken us back to typing mode before release. Without this
+     * path scroll mode would stick. */
+    if (button == COK_SCROLL_TRIGGER && scroll_trigger_pressed) {
+        scroll_trigger_pressed = false;
+        if (!g_is_fixed_scroll) {
+            scroll_mode_set(false);
+        }
+        return 0;
+    }
 
     if (g_is_typing_mode) {
         if (g_current_pressed_key == key_encoded) {
