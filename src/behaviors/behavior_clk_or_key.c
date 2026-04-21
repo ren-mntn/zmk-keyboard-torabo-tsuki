@@ -123,15 +123,22 @@ static int on_release(struct zmk_behavior_binding *binding,
     uint32_t key_encoded = binding->param1;
     uint32_t button = binding->param2;
 
-    /* Always close out a scroll-trigger regardless of current mode.
-     * The press flipped us into mouse/scroll state, but typing could
-     * have taken us back to typing mode before release. Without this
-     * path scroll mode would stick. */
+    /* Scroll-trigger release always closes scroll, regardless of the
+     * current typing_mode state. */
     if (button == COK_SCROLL_TRIGGER && scroll_trigger_pressed) {
         scroll_trigger_pressed = false;
         if (!g_is_fixed_scroll) {
             scroll_mode_set(false);
         }
+        return 0;
+    }
+
+    /* If this button latched Cmd for pinch-zoom, release Cmd before
+     * any other branch - typing_mode may have flipped on between press
+     * and release, and without this the modifier would stick. */
+    if (button < 3 && cmd_held_by_button[button]) {
+        cmd_held_by_button[button] = false;
+        release_cmd_modifier(event.timestamp);
         return 0;
     }
 
@@ -146,12 +153,6 @@ static int on_release(struct zmk_behavior_binding *binding,
         if (!g_is_fixed_scroll) {
             scroll_mode_set(false);
         }
-        return 0;
-    }
-
-    if (button < 3 && cmd_held_by_button[button]) {
-        cmd_held_by_button[button] = false;
-        release_cmd_modifier(event.timestamp);
         return 0;
     }
 
