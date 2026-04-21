@@ -1,0 +1,9 @@
+description: |
+  Vowel key with Keyball-style autocomplete. On press, if a recent J/K/L
+  click recorded a consonant within the typing-mode timeout, the
+  consonant is sent via a direct HID tap BEFORE the vowel keycode event
+  is raised. Mirrors QMK's tap_code16 + return true flow.
+
+compatible: "zmk,behavior-vowel-auto"
+
+include: one_param.yaml

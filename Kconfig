@@ -31,6 +31,15 @@ menuconfig ZMK_BEHAVIOR_BT_TOGGLE_01
       Flip between BT profiles 0 and 1 on each activation. Handy for
       users who only rotate between two Bluetooth hosts.
 
+menuconfig ZMK_BEHAVIOR_VOWEL_AUTO
+    bool "Vowel autocomplete behavior (Keyball44 drag-scroll helper)"
+    default y
+    help
+      Custom &kp wrapper for A/I/U/E/O that taps a recent J/K/L
+      click-consonant via direct HID before raising the vowel event.
+      Mirrors QMK's tap_code16 + return true flow for Keyball-style
+      vowel autocomplete.
+
 menuconfig ZMK_INPUT_PROCESSOR_SCROLL_MODE
     bool "Scroll-mode input processor (Keyball44 drag-scroll port)"
     default y

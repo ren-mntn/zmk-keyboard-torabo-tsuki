@@ -1,5 +1,6 @@
 if(CONFIG_ZMK_BEHAVIOR_CLK_OR_KEY
    OR CONFIG_ZMK_BEHAVIOR_BT_TOGGLE_01
+   OR CONFIG_ZMK_BEHAVIOR_VOWEL_AUTO
    OR CONFIG_ZMK_INPUT_PROCESSOR_MOUSE_ACCEL
    OR CONFIG_ZMK_INPUT_PROCESSOR_SCROLL_MODE)
   zephyr_library()
@@ -12,6 +13,9 @@ if(CONFIG_ZMK_BEHAVIOR_CLK_OR_KEY
 
   zephyr_library_sources_ifdef(CONFIG_ZMK_BEHAVIOR_BT_TOGGLE_01
     src/behaviors/behavior_bt_toggle_01.c)
+
+  zephyr_library_sources_ifdef(CONFIG_ZMK_BEHAVIOR_VOWEL_AUTO
+    src/behaviors/behavior_vowel_auto.c)
 
   if(CONFIG_ZMK_POINTING)
     zephyr_library_sources_ifdef(CONFIG_ZMK_INPUT_PROCESSOR_MOUSE_ACCEL

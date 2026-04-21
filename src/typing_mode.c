@@ -159,24 +159,14 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    /* Vowel auto-complete: click was within TIMEOUT, now vowel -> inject
-     * consonant. QMK uses tap_code16, which synchronously sends a press
-     * then release HID report. ZMK equivalent: zmk_hid_keyboard_press +
-     * zmk_endpoints_send_report. This bypasses the event system (no
-     * listener re-entry, no hid_listener double-press pre-release). The
-     * original vowel event then continues to the HID listener naturally
-     * for its normal press. */
+    /* Vowel autocomplete is performed by the &vowel_auto behavior on
+     * the A/I/U/E/O keys themselves (behavior runs BEFORE event
+     * dispatch, so the consonant ships ahead of the vowel). The
+     * listener only needs to clear stale autocomplete state on
+     * non-vowel alpha keys so the window doesn't leak. */
     if (g_typing_timer != 0 &&
         (ev->timestamp - g_typing_timer) <= CONFIG_ZMK_TYPING_MODE_TIMEOUT) {
-        if (is_vowel(ev->keycode) && is_jkl_consonant(g_last_keycode)) {
-            uint32_t consonant = g_last_keycode;
-            g_typing_timer = 0;
-            g_last_keycode = 0;
-            zmk_hid_keyboard_press(consonant);
-            zmk_endpoints_send_report(HID_USAGE_KEY);
-            zmk_hid_keyboard_release(consonant);
-            zmk_endpoints_send_report(HID_USAGE_KEY);
-        } else {
+        if (!is_vowel(ev->keycode) || !is_jkl_consonant(g_last_keycode)) {
             g_typing_timer = 0;
         }
     }
