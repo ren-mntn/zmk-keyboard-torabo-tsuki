@@ -158,32 +158,18 @@ static int typing_mode_keycode_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    /* Vowel auto-complete: click was within TIMEOUT, now vowel -> inject consonant */
+    /* Vowel auto-complete is disabled in ZMK: listeners from external
+     * modules run AFTER ZMK core's hid_listener, so the current vowel's
+     * HID report has already been sent by the time we could inject the
+     * consonant. Raising a synthesized vowel event then triggers ZMK's
+     * own double-press pre-release, producing spurious key pairs
+     * ("dokuji" -> "doukuji"). Leaving the hook site in place as a
+     * no-op so the timer state tracking still works for other purposes. */
     if (g_typing_timer != 0 &&
         (ev->timestamp - g_typing_timer) <= CONFIG_ZMK_TYPING_MODE_TIMEOUT) {
         if (is_vowel(ev->keycode) && is_jkl_consonant(g_last_keycode)) {
-            uint32_t consonant_encoded =
-                ZMK_HID_USAGE(HID_USAGE_KEY, g_last_keycode);
-            uint32_t vowel_encoded =
-                ZMK_HID_USAGE(ev->usage_page, ev->keycode);
-            int64_t ts = ev->timestamp;
-            g_typing_timer = 0;
-            g_last_keycode = 0;
-
-            /* The HID listener runs before this listener in the
-             * subscriber chain, so if we only raise the consonant the
-             * vowel has already been sent and we end up with
-             * "jaka" -> "あjか". Consume the incoming vowel event and
-             * re-raise consonant + vowel in the right order. */
-            in_vowel_inject = true;
-            raise_zmk_keycode_state_changed_from_encoded(consonant_encoded, true, ts);
-            raise_zmk_keycode_state_changed_from_encoded(consonant_encoded, false, ts);
-            raise_zmk_keycode_state_changed_from_encoded(vowel_encoded, true, ts);
-            in_vowel_inject = false;
-
-            return ZMK_EV_EVENT_HANDLED;
+            /* intentionally left empty */
         } else {
-            /* Non-vowel key cancels the auto-complete window */
             g_typing_timer = 0;
         }
     }
