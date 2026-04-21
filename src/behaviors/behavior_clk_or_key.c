@@ -46,19 +46,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define COK_SCROLL_TRIGGER 0xFF
 
 #if IS_CENTRAL
-/* Track per-button "is holding Cmd for pinch zoom" so release can mirror press. */
-static bool cmd_held_by_button[3] = {false, false, false};
-
-/* True while a scroll-trigger press that activated scroll mode is still
- * held down. Survives a mid-gesture typing-mode flip so the matching
- * release still exits scroll mode. */
-static bool scroll_trigger_pressed;
-
 static void press_cmd_modifier(int64_t timestamp) {
-    /* Two parallel paths so the modifier reaches the HID report regardless
-     * of which code path ZMK uses for the next event:
-     * 1) Direct HID register -> updates the next keyboard report sent.
-     * 2) Keycode event raise  -> processed by ZMK's listeners (incl. HID). */
     zmk_hid_register_mods(MOD_LGUI);
     zmk_endpoints_send_report(HID_USAGE_KEY);
     raise_zmk_keycode_state_changed_from_encoded(LGUI, true, timestamp);
@@ -71,11 +59,40 @@ static void release_cmd_modifier(int64_t timestamp) {
 }
 #endif
 
+/*
+ * Mirrors the QMK mymap process_record_user flow exactly:
+ *
+ *   press:
+ *     if BTN1 && scroll_active -> Cmd press, return
+ *     if typing_mode           -> release any currently-held letter,
+ *                                 register the new one, return
+ *     mouse mode: record last_keycode + typing_timer for vowel autocomplete,
+ *                 DRAG_SCROLL -> set scrolling, return
+ *                 BTN2 in scroll -> lock fixed-scroll, return
+ *                 otherwise -> normal mouse button press
+ *
+ *   release:
+ *     if BTN1 && scroll_active -> Cmd release, return
+ *     if typing_mode && held letter -> unregister letter, return
+ *     if DRAG_SCROLL           -> exit scroll unless fixed, return
+ *     if fixed-scroll BTN2     -> no-op
+ *     otherwise -> normal mouse button release
+ *
+ * QMK evaluates scroll_active at release time, so releasing BTN1 after
+ * DRAG_SCROLL has already been released leaves Cmd held; we accept the
+ * same edge case for parity.
+ */
+
 static int on_press(struct zmk_behavior_binding *binding,
                     struct zmk_behavior_binding_event event) {
 #if IS_CENTRAL
     uint32_t key_encoded = binding->param1;
     uint32_t button = binding->param2;
+
+    if (button == 0 /* LCLK */ && g_is_scrolling) {
+        press_cmd_modifier(event.timestamp);
+        return 0;
+    }
 
     if (g_is_typing_mode) {
         if (g_current_pressed_key != 0 && g_current_pressed_key != key_encoded) {
@@ -92,25 +109,14 @@ static int on_press(struct zmk_behavior_binding *binding,
 
     if (button == COK_SCROLL_TRIGGER) {
         scroll_mode_set(true);
-        scroll_trigger_pressed = true;
         return 0;
     }
 
-    if (g_is_scrolling && button < 3) {
-        if (button == 0) {
-            /* LCLK in scroll: hold Cmd for pinch zoom (Figma etc). */
-            cmd_held_by_button[0] = true;
-            press_cmd_modifier(event.timestamp);
-            return 0;
-        }
-        if (button == 1) {
-            /* RCLK in scroll: lock fixed-scroll mode. */
-            scroll_mode_set_fixed(true);
-            return 0;
-        }
+    if (button == 1 /* RCLK */ && g_is_scrolling) {
+        scroll_mode_set_fixed(true);
+        return 0;
     }
 
-    /* Normal click. */
     zmk_hid_mouse_button_press(button);
     zmk_endpoints_send_mouse_report();
 #endif
@@ -123,26 +129,12 @@ static int on_release(struct zmk_behavior_binding *binding,
     uint32_t key_encoded = binding->param1;
     uint32_t button = binding->param2;
 
-    /* Scroll-trigger release always closes scroll, regardless of the
-     * current typing_mode state. */
-    if (button == COK_SCROLL_TRIGGER && scroll_trigger_pressed) {
-        scroll_trigger_pressed = false;
-        if (!g_is_fixed_scroll) {
-            scroll_mode_set(false);
-        }
-        return 0;
-    }
-
-    /* If this button latched Cmd for pinch-zoom, release Cmd before
-     * any other branch - typing_mode may have flipped on between press
-     * and release, and without this the modifier would stick. */
-    if (button < 3 && cmd_held_by_button[button]) {
-        cmd_held_by_button[button] = false;
+    if (button == 0 /* LCLK */ && g_is_scrolling) {
         release_cmd_modifier(event.timestamp);
         return 0;
     }
 
-    if (g_is_typing_mode) {
+    if (g_is_typing_mode && g_current_pressed_key != 0) {
         if (g_current_pressed_key == key_encoded) {
             g_current_pressed_key = 0;
         }
