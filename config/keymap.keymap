@@ -65,7 +65,7 @@
         /* Layer 1: Editor shortcuts (Win/Alt combos) */
         layer_1 {
             bindings = <
-&tog 6     &none      &none      &none      &none      &none                                                   &kp LG(R)  &none              &os_aware LC(PG_UP) LC(LS(TAB))  &os_aware LC(PG_DN) LC(TAB)  &kp LG(F)          &kp LS(LG(F))
+&tog 6     &none      &none      &none      &none      &none                                                   &kp LG(R)  &none              &os_aware LC(PG_UP) LG(LS(TAB))  &os_aware LC(PG_DN) LG(TAB)  &kp LG(F)          &kp LS(LG(F))
 &kp LGUI   &kp LA(A)  &kp LA(S)  &kp LA(D)  &kp LA(F)  &none                                                   &mkp MB4   &kp LG(C)          &kp LG(V)          &kp LS(LG(C))      &kp LC(GRAVE)      &kp LG(W)
 &kp LSHFT  &none      &none      &none      &none      &none                                                   &kp LS(N8) &kp LG(X)          &kp LS(LG(V))      &kp LS(LG(Y))      &kp LC(LS(LA(R)))  &kp LC(LA(T))
 &none      &none      &kp LALT   &kp LCTRL  &none      &kp SPACE  &none                                 &none      &none              &trans             &kp ESC            &none              &none
