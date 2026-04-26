@@ -40,6 +40,14 @@ menuconfig ZMK_BEHAVIOR_VOWEL_AUTO
       Mirrors QMK's tap_code16 + return true flow for Keyball-style
       vowel autocomplete.
 
+menuconfig ZMK_BEHAVIOR_OS_AWARE
+    bool "OS-aware key press behavior"
+    default y
+    help
+      Picks one of two encoded keycodes to send based on the active BT
+      profile (0 = Mac, others = Win/etc). Use for shortcuts that
+      need different modifiers per host.
+
 menuconfig ZMK_INPUT_PROCESSOR_SCROLL_MODE
     bool "Scroll-mode input processor (Keyball44 drag-scroll port)"
     default y

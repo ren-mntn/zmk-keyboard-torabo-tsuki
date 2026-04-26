@@ -1,0 +1,8 @@
+description: |
+  OS-aware key press: param1 fires when BT profile 0 is active (Mac),
+  param2 fires for any other profile. Use to swap LGUI/LCTRL or
+  Cmd-Shift-[ vs Ctrl-Tab style shortcuts per host.
+
+compatible: "zmk,behavior-os-aware"
+
+include: two_param.yaml
