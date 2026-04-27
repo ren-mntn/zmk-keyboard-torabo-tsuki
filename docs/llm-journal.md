@@ -236,6 +236,34 @@ After any settings_reset firmware flash, bonds are cleared — Mac side
 must remove the old `torabo-tsuki` entry under Bluetooth before
 re-pairing, or connections drop instantly.
 
+## Per-host shortcut routing (os_aware)
+
+Same physical key, different keycode per BT profile. Behavior:
+`src/behaviors/behavior_os_aware.c` (compatible
+`zmk,behavior-os-aware`). param1 fires on profile 0 (Mac), param2 on
+any other profile. Calls `zmk_ble_active_profile_index()` at press,
+caches the chosen encoded keycode in a `pressed_kc[position]` array
+indexed by `event.position` so release sends the same key even if the
+profile is toggled while the key is held.
+
+Usage:
+```
+&os_aware LC(PG_UP) LG(LS(TAB))   // Mac=Ctrl+PgUp, Win=Win+Shift+Tab
+&os_aware LC(PG_DN) LG(TAB)       // Mac=Ctrl+PgDn, Win=Win+Tab
+```
+
+Gotcha encountered: this user runs PowerToys (or equivalent) on
+Windows with **Ctrl <-> Win swapped**. Sending `LC(TAB)` from the
+keyboard becomes `Win+Tab` on Windows = Task View, not next-tab. To
+land as `Ctrl+Tab` on Windows we send `LG(TAB)` from the firmware so
+the OS-side swap turns it into `Ctrl+Tab`. If a future user has no
+swap, change Win-side params back to `LC(...)` form.
+
+Other obvious applications of the same behavior:
+- Cmd+C vs Ctrl+C clipboard combos
+- Spotlight Cmd+Space vs Win key
+- App-specific shortcuts where modifier conventions differ
+
 ## Where things live
 
 - `src/typing_mode.{c,h}` — global mode flags and listener that flips
@@ -246,6 +274,7 @@ re-pairing, or connections drop instantly.
 - `src/behaviors/behavior_vowel_auto.c` — AIUEO wrapper with consonant
   tap. Only way to get correct order in ZMK.
 - `src/behaviors/behavior_bt_toggle_01.c` — 2-device BT profile toggle.
+- `src/behaviors/behavior_os_aware.c` — per-profile keycode router.
 - `src/input_processors/input_processor_mouse_accel.c` — Keyball44
   adaptive accel curve + typing-mode exit.
 - `src/input_processors/input_processor_scroll_mode.c` — X/Y →
